@@ -13,35 +13,24 @@ selected_diagnoses = []
 def get_autocomplete_words(prefix):
     return jsonify({ 'words': prefix_tree.autocomplete(prefix) })       
 
-# Match query with selected diagnosis and store
-@app.route('/api/search', methods = ['POST'])
+# Update/store query with selected diagnosis
+@app.route('/api/search', methods = ['PUT'])
 def select_diagnosis():
     if not request.json:
         abort(400)
-    matched_query = {
+    diagnosis = {
         'query': request.json['query'],
         'selected': request.json['selected']
     }
-    selected_diagnoses.append(matched_query)
-    return jsonify({ 'selected_diagnosis': matched_query }), 201
-
-# Update query with selected diagnosis
-@app.route('/api/search', methods = ['PUT'])
-def update_selected_diagnosis():
-    if not request.json:
-        abort(400)
-    updated_query = {
-        'query': request.json['query'],
-        'selected': request.json['selected']
-    }
-    # Find relevant query in db then update value
+    # Store new entry or find relevant query in db then update value
     matched_queries = [matched for matched in selected_diagnoses if matched['query'] == request.json['query']]
     if not matched_queries:
-        abort(404)
-    old_query = matched_queries[0]
-    old_query['query'] = request.json['query']
-    old_query['selected'] = request.json['selected']
-    return jsonify({ 'selected_diagnosis': updated_query }), 200
+        selected_diagnoses.append(diagnosis)
+    else:
+        old_query = matched_queries[0]
+        old_query['query'] = request.json['query']
+        old_query['selected'] = request.json['selected']
+    return jsonify({ 'selected_diagnosis': diagnosis }), 200
 
 # Get database values of queries matched to selected diagnoses
 @app.route('/api/search', methods = ['GET'])
